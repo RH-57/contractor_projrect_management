@@ -30,7 +30,7 @@ func TranslateErrorMessage(err error) map[string]string {
 			case "max":
 				errorsMap[field] = fmt.Sprintf("%s must be at most %s characters", field, fieldError.Param())
 			case "numeric":
-				errorsMap[field] = fmt.Sprintf("%s must be a", field)
+				errorsMap[field] = fmt.Sprintf("%s must be a number", field)
 			case "oneof":
 				errorsMap[field] = fmt.Sprintf("%s must be one of %s", field, fieldError.Param())
 			default:

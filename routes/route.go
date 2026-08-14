@@ -26,5 +26,7 @@ func SetupRouter() *gin.Engine {
 	router.PUT("/api/users/:id", middlewares.AuthMiddleware(), controllers.UpdateUser)
 	router.DELETE("/api/users/:id", middlewares.AuthMiddleware(), controllers.DeleteUser)
 
+	router.GET("/api/projects", middlewares.AuthMiddleware(), controllers.GetAllProject)
+
 	return router
 }
