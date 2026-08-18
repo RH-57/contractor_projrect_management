@@ -26,7 +26,14 @@ func SetupRouter() *gin.Engine {
 	router.PUT("/api/users/:id", middlewares.AuthMiddleware(), controllers.UpdateUser)
 	router.DELETE("/api/users/:id", middlewares.AuthMiddleware(), controllers.DeleteUser)
 
+	router.GET("/api/customers", middlewares.AuthMiddleware(), controllers.GetAllCustomer)
+	router.POST("/api/customers", middlewares.AuthMiddleware(), controllers.CreateCustomer)
+	router.GET("/api/customers/:id", middlewares.AuthMiddleware(), controllers.FindCustomerById)
+	router.PUT("/api/customers/:id", middlewares.AuthMiddleware(), controllers.UpdateCustomer)
+	router.DELETE("/api/customers/:id", middlewares.AuthMiddleware(), controllers.DeleteCustomer)
+
 	router.GET("/api/projects", middlewares.AuthMiddleware(), controllers.GetAllProject)
+	router.POST("/api/projects", middlewares.AuthMiddleware(), controllers.CreateProject)
 
 	return router
 }
