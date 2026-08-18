@@ -52,6 +52,16 @@ func CreateProject(c *gin.Context) {
 		return
 	}
 
+	var customer models.Customer
+	if err := database.DB.First(&customer).Error; err != nil {
+		c.JSON(http.StatusBadRequest, structs.ErrorResponse{
+			Success: false,
+			Message: "Customer not found",
+			Errors:  helpers.TranslateErrorMessage(err),
+		})
+		return
+	}
+
 	startDate, err := time.Parse("2006-01-02", req.StartDate)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, structs.ErrorResponse{
@@ -90,6 +100,7 @@ func CreateProject(c *gin.Context) {
 	project := models.Project{
 		Code:          projectCode,
 		Name:          req.Name,
+		CustomerID:    req.CustomerID,
 		ContractValue: req.ContractValue,
 		EstimatedCost: req.EstimatedCost,
 		Status:        status,
@@ -115,6 +126,7 @@ func CreateProject(c *gin.Context) {
 			Id:            project.Id,
 			Code:          project.Code,
 			Name:          project.Name,
+			CustomerID:    project.Customer.Id,
 			ContractValue: project.ContractValue,
 			EstimatedCost: project.EstimatedCost,
 			Status:        project.Status,
