@@ -34,6 +34,9 @@ func SetupRouter() *gin.Engine {
 
 	router.GET("/api/projects", middlewares.AuthMiddleware(), controllers.GetAllProject)
 	router.POST("/api/projects", middlewares.AuthMiddleware(), controllers.CreateProject)
+	router.GET("/api/projects/:id", middlewares.AuthMiddleware(), controllers.FindProjectById)
+	router.PUT("/api/projects/:id", middlewares.AuthMiddleware(), controllers.UpdateProject)
+	router.DELETE("/api/projects/:id", middlewares.AuthMiddleware(), controllers.DeleteProject)
 
 	return router
 }

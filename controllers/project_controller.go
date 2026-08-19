@@ -53,7 +53,7 @@ func CreateProject(c *gin.Context) {
 	}
 
 	var customer models.Customer
-	if err := database.DB.First(&customer).Error; err != nil {
+	if err := database.DB.First(&customer, req.CustomerID).Error; err != nil {
 		c.JSON(http.StatusBadRequest, structs.ErrorResponse{
 			Success: false,
 			Message: "Customer not found",
@@ -126,7 +126,7 @@ func CreateProject(c *gin.Context) {
 			Id:            project.Id,
 			Code:          project.Code,
 			Name:          project.Name,
-			CustomerID:    project.Customer.Id,
+			CustomerID:    project.CustomerID,
 			ContractValue: project.ContractValue,
 			EstimatedCost: project.EstimatedCost,
 			Status:        project.Status,
@@ -135,5 +135,161 @@ func CreateProject(c *gin.Context) {
 			CreatedAt:     project.CreatedAt.Format("2006-01-02 15:04:05"),
 			UpdatedAt:     project.UpdatedAt.Format("2006-01-02 15:04:05"),
 		},
+	})
+}
+
+func FindProjectById(c *gin.Context) {
+	id := c.Param("id")
+
+	var project models.Project
+
+	if err := database.DB.First(&project, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, structs.ErrorResponse{
+			Success: false,
+			Message: "Project not found",
+			Errors:  helpers.TranslateErrorMessage(err),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, structs.SuccessResponse{
+		Success: true,
+		Message: "Project found",
+		Data: structs.ProjectResponse{
+			Id:            project.Id,
+			Code:          project.Code,
+			Name:          project.Name,
+			CustomerID:    project.CustomerID,
+			ContractValue: project.ContractValue,
+			EstimatedCost: project.EstimatedCost,
+			Status:        project.Status,
+			StartDate:     project.StartDate.Format("2006-01-02"),
+			EndDate:       project.EndDate.Format("2006-01-02"),
+			CreatedAt:     project.CreatedAt.Format("2006-01-02 15:04:05"),
+			UpdatedAt:     project.UpdatedAt.Format("2006-01-02 15:04:05"),
+		},
+	})
+}
+
+func UpdateProject(c *gin.Context) {
+	id := c.Param("id")
+
+	var project models.Project
+	if err := database.DB.First(&project, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, structs.ErrorResponse{
+			Success: false,
+			Message: "Project Not Found",
+			Errors:  helpers.TranslateErrorMessage(err),
+		})
+		return
+	}
+
+	var req structs.ProjectUpdateRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusUnprocessableEntity, structs.ErrorResponse{
+			Success: false,
+			Message: "Validation Error",
+			Errors:  helpers.TranslateErrorMessage(err),
+		})
+		return
+	}
+
+	if req.CustomerID != 0 {
+		var customer models.Customer
+		if err := database.DB.First(&customer, req.CustomerID).Error; err != nil {
+			c.JSON(http.StatusBadRequest, structs.ErrorResponse{
+				Success: false,
+				Message: "Customer not found",
+				Errors:  helpers.TranslateErrorMessage(err),
+			})
+			return
+		}
+		project.CustomerID = req.CustomerID
+	}
+
+	startDate, err := time.Parse("2006-01-02", req.StartDate)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, structs.ErrorResponse{
+			Success: false,
+			Message: "Validation Error",
+			Errors:  map[string]string{"start_date": "Invalid date format, use YYYY-MM-DD"},
+		})
+		return
+	}
+
+	endDate, err := time.Parse("2006-01-02", req.EndDate)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, structs.ErrorResponse{
+			Success: false,
+			Message: "Validation Error",
+			Errors:  map[string]string{"end_date": "Invalid date format, use YYYY-MM-DD"},
+		})
+		return
+	}
+
+	project.Name = req.Name
+	project.ContractValue = req.ContractValue
+	project.EstimatedCost = req.EstimatedCost
+	project.Status = req.Status
+	project.StartDate = startDate
+	project.EndDate = endDate
+
+	if err := database.DB.Save(&project).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, structs.ErrorResponse{
+			Success: false,
+			Message: "Failed to update project",
+			Errors:  helpers.TranslateErrorMessage(err),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, structs.SuccessResponse{
+		Success: true,
+		Message: "Project updated successfully",
+		Data: structs.ProjectResponse{
+			Id:            project.Id,
+			Code:          project.Code,
+			Name:          project.Name,
+			CustomerID:    project.CustomerID,
+			ContractValue: project.ContractValue,
+			EstimatedCost: project.EstimatedCost,
+			Status:        project.Status,
+			StartDate:     project.StartDate.Format("2006-01-02"),
+			EndDate:       project.EndDate.Format("2006-01-02"),
+			CreatedAt:     project.CreatedAt.Format("2006-01-02 15:04:05"),
+			UpdatedAt:     project.UpdatedAt.Format("2006-01-02 15:04:05"),
+		},
+	})
+}
+
+func DeleteProject(c *gin.Context) {
+	id := c.Param("id")
+
+	// 1. Cari data project berdasarkan ID
+	var project models.Project
+	if err := database.DB.First(&project, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, structs.ErrorResponse{
+			Success: false,
+			Message: "Project not found",
+			Errors:  helpers.TranslateErrorMessage(err),
+		})
+		return
+	}
+
+	// 2. Hapus data dari Database
+	if err := database.DB.Delete(&project).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, structs.ErrorResponse{
+			Success: false,
+			Message: "Failed to delete project",
+			Errors:  helpers.TranslateErrorMessage(err),
+		})
+		return
+	}
+
+	// 3. Response Sukses
+	c.JSON(http.StatusOK, structs.SuccessResponse{
+		Success: true,
+		Message: "Project deleted successfully",
+		Data:    nil,
 	})
 }
