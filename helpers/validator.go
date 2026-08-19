@@ -6,89 +6,47 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/go-sql-driver/mysql"
-	"gorm.io/gorm"
 )
 
 func TranslateErrorMessage(err error) map[string]string {
-	errorsMap := make(map[string]string)
+	errorMessages := make(map[string]string)
 
 	if err == nil {
-		return errorsMap
+		return errorMessages
 	}
 
+	// 1. Penanganan Error dari Validasi Struct (go-playground/validator)
 	if validationErrors, ok := err.(validator.ValidationErrors); ok {
-		for _, fieldError := range validationErrors {
-			field := fieldError.Field()
-
-			switch fieldError.Tag() {
+		for _, e := range validationErrors {
+			field := strings.ToLower(e.Field())
+			switch e.Tag() {
 			case "required":
-				errorsMap[field] = fmt.Sprintf("%s is required", field)
-			case "email":
-				errorsMap[field] = "Invalid email format"
+				errorMessages[field] = fmt.Sprintf("%s is required", e.Field())
 			case "min":
-				errorsMap[field] = fmt.Sprintf("%s must be at least %s characters", field, fieldError.Param())
+				errorMessages[field] = fmt.Sprintf("%s must be at least %s characters", e.Field(), e.Param())
 			case "max":
-				errorsMap[field] = fmt.Sprintf("%s must be at most %s characters", field, fieldError.Param())
-			case "numeric":
-				errorsMap[field] = fmt.Sprintf("%s must be a number", field)
-			case "oneof":
-				errorsMap[field] = fmt.Sprintf("%s must be one of %s", field, fieldError.Param())
+				errorMessages[field] = fmt.Sprintf("%s must not exceed %s characters", e.Field(), e.Param())
 			default:
-				errorsMap[field] = fmt.Sprintf("%s is invalid", field)
+				errorMessages[field] = fmt.Sprintf("%s is invalid", e.Field())
 			}
 		}
-
-		return errorsMap
+		return errorMessages
 	}
 
-	if mysqlErr, ok := err.(*mysql.MySQLError); ok && mysqlErr.Number == 1062 {
-		errMsg := mysqlErr.Message
-
-		if strings.Contains(errMsg, "username") || strings.Contains(errMsg, "idx_users_username") {
-			errorsMap["Username"] = "Username already exists"
-		} else if strings.Contains(errMsg, "email") || strings.Contains(errMsg, "idx_users_email") {
-			errorsMap["Email"] = "Email already exists"
-		} else if strings.Contains(errMsg, "code") || strings.Contains(errMsg, "idx_projects_code") {
-			errorsMap["Code"] = "Project code already exists"
-		} else {
-			errorsMap["Database"] = "Duplicate entry error"
-		}
-		return errorsMap
-	}
-
-	if strings.Contains(err.Error(), "Duplicate entry") {
-		if strings.Contains(err.Error(), "username") {
-			errorsMap["Username"] = "Username already exists"
-		} else if strings.Contains(err.Error(), "email") {
-			errorsMap["Email"] = "Email already exists"
-		} else if strings.Contains(err.Error(), "code") {
-			errorsMap["Code"] = "Project code already exists"
-		} else {
-			errorsMap["Database"] = "Duplicate entry error"
-		}
-		return errorsMap
-	}
-
-	if err == gorm.ErrRecordNotFound {
-		errorsMap["Error"] = "Record not found"
-		return errorsMap
-	}
-
-	// 4. Fallback Error Lainnya
-	errorsMap["Error"] = err.Error()
-	return errorsMap
-}
-
-func IsDuplicateEntryError(err error) bool {
-	if err == nil {
-		return false
-	}
-
-	// Cek langsung dari tipe MySQL Error
+	// 2. Penanganan Error dari Database MySQL (misal: Unique Constraint Duplicate Key)
 	if mysqlErr, ok := err.(*mysql.MySQLError); ok {
-		return mysqlErr.Number == 1062
+		// Error code 1062 = Duplicate entry
+		if mysqlErr.Number == 1062 {
+			if strings.Contains(mysqlErr.Message, "code") {
+				errorMessages["code"] = "Code already exists" // Pesan generik yang aman untuk semua tabel
+			} else {
+				errorMessages["database"] = "Duplicate entry detected"
+			}
+			return errorMessages
+		}
 	}
 
-	// Cek berdasarkan substring pesan error
-	return strings.Contains(err.Error(), "Duplicate entry")
+	// 3. Fallback jika error berupa string biasa
+	errorMessages["error"] = err.Error()
+	return errorMessages
 }
