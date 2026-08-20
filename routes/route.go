@@ -44,5 +44,11 @@ func SetupRouter() *gin.Engine {
 	router.PUT("/api/employees/:id", middlewares.AuthMiddleware(), controllers.UpdateEmployee)
 	router.DELETE("/api/employees/:id", middlewares.AuthMiddleware(), controllers.DeleteEmployee)
 
+	router.GET("/api/vendors", middlewares.AuthMiddleware(), controllers.GetAllVendor)
+	router.POST("/api/vendors", middlewares.AuthMiddleware(), controllers.CreateVendor)
+	router.GET("/api/vendors/:id", middlewares.AuthMiddleware(), controllers.FindVendorById)
+	router.PUT("/api/vendors/:id", middlewares.AuthMiddleware(), controllers.UpdateVendor)
+	router.DELETE("/api/vendors/:id", middlewares.AuthMiddleware(), controllers.DeleteVendor)
+
 	return router
 }
