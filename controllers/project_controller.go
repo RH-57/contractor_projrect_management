@@ -69,6 +69,7 @@ func CreateProject(c *gin.Context) {
 			Message: "Validation Error",
 			Errors:  map[string]string{"start_date": "Invalid date format, use YYYY-MM-DD"},
 		})
+		return
 
 	}
 
